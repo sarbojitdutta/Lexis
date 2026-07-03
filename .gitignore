@@ -1,0 +1,21 @@
+# Python virtual environment
+backend/.env/
+backend/env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables
+.env
+**/.env
+
+# Database and indexes
+backend/db/
+backend/data/processed/
+backend/data/raw/
+
+# OS/editor junk
+.DS_Store
+*.log
