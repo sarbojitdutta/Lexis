@@ -476,7 +476,7 @@ def graph_stats() -> dict:
 
 if __name__ == "__main__":
     import json as _json
-    from graph.extracter import extract_all
+    from backend.graph.extractor import extract_all
 
     processed_dir = Path(__file__).parent.parent / "data/processed"
     json_files    = list(processed_dir.glob("*.json"))

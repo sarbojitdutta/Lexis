@@ -13,3 +13,7 @@ FAISS_META = BASE_DIR / "db/faiss/legal_meta.json"
 GRAPH_DB = BASE_DIR / "db/graph/graph.db"
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+TOP_K_VECTOR = 4
+TOP_K_GRAPH = 6
+MAX_VECTOR = 3000
+MAX_CONTEXT = 1200
