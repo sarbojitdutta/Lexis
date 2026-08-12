@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import importlib
 
-from api.routes  import query, documents, graphs
+from api.routes  import query, documents, graphs, auth
 from config      import FAISS_INDEX, GRAPH_DB
 from llm.client  import check_llm_connection
 
@@ -20,7 +20,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins     = ["http://localhost:3000"],
+    allow_origins     = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ],
     allow_methods     = ["*"],
     allow_headers     = ["*"],
     allow_credentials = True,
@@ -30,6 +35,7 @@ app.add_middleware(
 app.include_router(query.router,     prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(graphs.router,     prefix="/api")
+app.include_router(auth.router, prefix="/api")
 
 
 # ─────────────────────────────────────────────

@@ -79,6 +79,12 @@ def merge(query: str,
         weight = WEIGHTS.get(reason, WEIGHTS["traversal"])
         section_id = r.get("section_id", "")
         meta_entry = meta_lookup.get(section_id, {})
+        title      = meta_entry.get("title",  "").strip()
+        source     = meta_entry.get("source", "").strip()
+
+        if not title and not source:
+            continue
+
         normalized.append({
             "text"       : r.get("text", ""),
             "section_id" : r.get("section_id", ""),
@@ -211,7 +217,11 @@ def build_citations(results: list[dict]) -> list[dict]:
 
     for r in results:
         sid = r.get("section_id", "")
+        title = r.get("title", "").strip()
+        source = r.get("source", "").strip()
         if not sid or sid in seen_sections:
+            continue
+        if not title and not source:
             continue
         seen_sections.add(sid)
 
