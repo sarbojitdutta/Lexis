@@ -1,0 +1,29 @@
+
+services:
+  - type: web
+    name: lexis-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRE_MINUTES
+        value: 10080
+      - key: PYTHON_VERSION
+        value: 3.12.3
+    disk:
+      name: lexis-data
+      mountPath: /data
+      sizeGB: 1

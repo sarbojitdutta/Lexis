@@ -1,4 +1,5 @@
 import sys
+import os
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from fastapi import APIRouter, HTTPException
@@ -8,7 +9,7 @@ from auth.jwt   import create_token
 
 router = APIRouter()
 
-FRONTEND_URL = "http://localhost:5173"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 @router.get("/auth/google")
 def google_login():
@@ -16,7 +17,7 @@ def google_login():
     return RedirectResponse(url)
 
 @router.get("/auth/callback")
-async def oogle_callback(code: str, state: str = ""): 
+async def google_callback(code: str, state: str = ""): 
     try:
         token_data = await exchange_code_for_token(code)
         access_token = token_data.get("access_token")
