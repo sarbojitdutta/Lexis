@@ -12,11 +12,11 @@ app = FastAPI(
     description = "AI-powered Indian legal document search and Q&A",
     version     = "0.1.0"
 )
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins     = [
-        FRONTEND_URL,
+        "https://lexis-puce.vercel.app/",
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
