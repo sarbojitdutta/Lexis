@@ -36,7 +36,8 @@ export function getCurrentUser(): User | null {
 }
 
 export function loginWithGoogle(): void {
-  window.location.href = "http://localhost:8000/api/auth/google";
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  window.location.href = `${apiUrl}/api/auth/google`;
 }
 
 export function logout(): void {
