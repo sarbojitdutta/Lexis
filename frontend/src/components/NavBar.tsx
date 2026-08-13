@@ -1,6 +1,6 @@
 // src/components/Navbar.tsx
 
-import { Scale, User } from "lucide-react";
+import { Scale } from "lucide-react";
 import { loginWithGoogle } from "@/lib/auth";
 import UserMenu from "./UserMenu";
 import type { User as UserType } from "@/lib/auth";
