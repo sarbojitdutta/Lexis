@@ -8,12 +8,9 @@ LLM_MODEL = "llama-3.3-70b-versatile"
 
 IS_RENDER = os.getenv("RENDER", False)
 
-if IS_RENDER:
-    PERSIST_DIR = Path("/data")
-else:
-    PERSIST_DIR = Path(__file__).parent
 
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).resolve().parent
+PERSIST_DIR = BASE_DIR
 DATA_RAW = PERSIST_DIR / "data/raw"
 DATA_PROCESSED = PERSIST_DIR / "data/processed"
 FAISS_INDEX = PERSIST_DIR / "db/faiss/legal.index"
