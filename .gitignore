@@ -10,10 +10,10 @@ __pycache__/
 # Environment variables
 .env
 **/.env
+.env.production
 
 # Database and indexes
-backend/db/
-backend/data/processed/
+
 backend/data/raw/
 
 # OS/editor junk
