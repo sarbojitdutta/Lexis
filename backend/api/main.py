@@ -106,3 +106,15 @@ if __name__ == "__main__":
         port   = 8000,
         reload = True
     )
+
+@app.get("/api/debug-env")
+def debug_env():
+    import os
+    return {
+        "JWT_SECRET_SET"    : bool(os.getenv("JWT_SECRET")),
+        "JWT_SECRET_LENGTH" : len(os.getenv("JWT_SECRET", "")),
+        "GROQ_KEY_SET"      : bool(os.getenv("GROQ_API_KEY")),
+        "GOOGLE_ID_SET"     : bool(os.getenv("GOOGLE_CLIENT_ID")),
+        "REDIRECT_URI"      : os.getenv("GOOGLE_REDIRECT_URI"),
+        "FRONTEND_URL"      : os.getenv("FRONTEND_URL"),
+    }
