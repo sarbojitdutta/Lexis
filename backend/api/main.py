@@ -47,6 +47,7 @@ app.include_router(auth.router, prefix="/api")
 # ─────────────────────────────────────────────
 
 @app.get("/api/health")
+@app.head("/api/health")
 def health():
     # Vector index stats
     vector_status  = "not found"
