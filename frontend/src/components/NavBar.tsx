@@ -78,7 +78,7 @@ export default function Navbar({
             height="14"
             alt="Google"
           />
-          Continue with Google
+          Login with Google
         </button>
       )}
     </nav>
