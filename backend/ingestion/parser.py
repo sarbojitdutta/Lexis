@@ -11,10 +11,6 @@ from typing import Optional
 from config import DATA_PROCESSED, DATA_RAW
 
 
-# ─────────────────────────────────────────────
-# Legal marker patterns
-# ─────────────────────────────────────────────
-
 PART_PATTERN      = re.compile(r'^\s*PART\s+([IVXLC\d]+)\s*[—–:.]?\s*(.{0,60})$', re.MULTILINE)
 CHAPTER_PATTERN   = re.compile(r'^\s*CHAPTER\s+([IVXLC\d]+)\s*[—–:.]?\s*(.{0,60})$', re.MULTILINE | re.IGNORECASE)
 

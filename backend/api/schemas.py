@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing  import Optional
 
 # Request schemas
@@ -31,14 +31,16 @@ class QueryRequest(BaseModel):
         description = "Number of graph search results"
     )
 
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
-            "example": {
-                "question": "Can a minor enter into a contract?",
-                "k_vector": 4,
-                "k_graph" : 6,
-            }
-        }
+                    "example": {
+                        "question": "Can a minor enter into a contract?",
+                        "k_vector": 4,
+                        "k_graph" : 6,
+                    }
+                }
+    )
+        
 
 
 class IngestRequest(BaseModel):
@@ -51,12 +53,14 @@ class IngestRequest(BaseModel):
         description = "PDF filename inside data/raw/ folder"
     )
 
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
-            "example": {
-                "filename": "indian_contract_act.pdf"
-            }
-        }
+                    "example": {
+                        "filename": "indian_contract_act.pdf"
+                    }
+                }
+    )
+        
 
 
 
@@ -85,24 +89,26 @@ class QueryResponse(BaseModel):
         description = "Number of context chunks used"
     )
 
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
-            "example": {
-                "question" : "Can a minor enter into a contract?",
-                "answer"   : "According to Section 11...",
-                "citations": [
-                    {
-                        "section_id" : "11",
-                        "title"      : "Who are competent to contract",
-                        "source"     : "A187209.pdf",
-                        "source_type": "vector",
-                        "score"      : 0.92
+                    "example": {
+                        "question" : "Can a minor enter into a contract?",
+                        "answer"   : "According to Section 11...",
+                        "citations": [
+                            {
+                                "section_id" : "11",
+                                "title"      : "Who are competent to contract",
+                                "source"     : "A187209.pdf",
+                                "source_type": "vector",
+                                "score"      : 0.92
+                            }
+                        ],
+                        "context_used": 6
                     }
-                ],
-                "context_used": 6
-            }
-        }
-
+                }
+        
+    )
+        
 
 class DocumentInfo(BaseModel):
     """
