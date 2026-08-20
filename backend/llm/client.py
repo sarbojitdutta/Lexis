@@ -5,21 +5,18 @@ sys.path.append(str(Path(__file__).parent.parent))
 import requests
 from config import GROQ_API_KEY, LLM_MODEL
 
+FALLBACK_MODELS = [
+    "llama-3.1-8b-instant",
+    "gemma2-9b-it",
+    "llama3-8b-8192",
+]
+
 
 def call_llm(prompt: str,
              system_prompt: str = None,
              temperature: float = 0.1,
              max_tokens: int    = 1024) -> str:
-    """
-    Send a prompt to Groq API and return
-    the response text.
-
-    prompt        → the user message
-    system_prompt → optional system instruction
-    temperature   → 0.0 = deterministic, 1.0 = creative
-                    0.1 is good for legal answers
-    max_tokens    → max length of response
-    """
+    
     if not GROQ_API_KEY:
         raise ValueError(
             "GROQ_API_KEY not found. "
@@ -31,53 +28,68 @@ def call_llm(prompt: str,
         "Content-Type" : "application/json",
     }
 
+    model_to_try = [LLM_MODEL] + [m for m in FALLBACK_MODELS if m != LLM_MODEL]
+
+    for model in model_to_try:
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({
+                    "role"   : "system",
+                    "content": system_prompt
+                })
+            messages.append({
+                "role"   : "user",
+                "content": prompt
+            })
+        
+            payload = {
+                "model"      : model,
+                "messages"   : messages,
+                "temperature": temperature,
+                "max_tokens" : max_tokens,
+            }
+        
+            try:
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers = headers,
+                    json    = payload,
+                    timeout = 60,
+                )
+        
+                if response.status_code == 200:
+                    return response.json()["choices"][0]["message"]["content"]
+        
+                elif response.status_code == 429:
+                    raise Exception(
+                        "Groq rate limit hit. Wait a moment and try again."
+                    )
+        
+                else:
+                    raise Exception(
+                        f"Groq API error {response.status_code}: "
+                        f"{response.text[:200]}"
+                    )
+        
+            except requests.exceptions.Timeout:
+                raise Exception("Groq API request timed out.")
+        
+            except requests.exceptions.RequestException as e:
+                raise Exception(f"Network error calling Groq: {e}")
+            
+        except Exception as e:
+            if "model_not_found" in str(e) or "404" in str(e):
+                continue
+            raise
+    
+    raise Exception(
+        f"All models failed. Tried: {model_to_try}"
+    )         
+
+
     # Build messages list
-    messages = []
-    if system_prompt:
-        messages.append({
-            "role"   : "system",
-            "content": system_prompt
-        })
-    messages.append({
-        "role"   : "user",
-        "content": prompt
-    })
-
-    payload = {
-        "model"      : LLM_MODEL,
-        "messages"   : messages,
-        "temperature": temperature,
-        "max_tokens" : max_tokens,
-    }
-
-    try:
-        response = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers = headers,
-            json    = payload,
-            timeout = 60,
-        )
-
-        if response.status_code == 200:
-            return response.json()["choices"][0]["message"]["content"]
-
-        elif response.status_code == 429:
-            raise Exception(
-                "Groq rate limit hit. Wait a moment and try again."
-            )
-
-        else:
-            raise Exception(
-                f"Groq API error {response.status_code}: "
-                f"{response.text[:200]}"
-            )
-
-    except requests.exceptions.Timeout:
-        raise Exception("Groq API request timed out.")
-
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Network error calling Groq: {e}")
-
+    
 
 # ─────────────────────────────────────────────
 # Legal Q&A function
