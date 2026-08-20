@@ -8,6 +8,7 @@ import sqlite3
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import importlib
+import logging
 
 from api.routes  import query, documents, graphs, auth
 from config      import FAISS_INDEX, GRAPH_DB
@@ -119,3 +120,8 @@ def debug_env():
         "REDIRECT_URI"      : os.getenv("GOOGLE_REDIRECT_URI"),
         "FRONTEND_URL"      : os.getenv("FRONTEND_URL"),
     }
+
+logging.basicConfig(
+    level  = logging.INFO,
+    format = "%(asctime)s — %(name)s — %(levelname)s — %(message)s"
+)

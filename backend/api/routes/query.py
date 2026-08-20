@@ -6,6 +6,8 @@ from fastapi          import APIRouter, HTTPException
 from api.schemas      import QueryRequest, QueryResponse, Citation
 from retrieval.merger import build_context, build_citations
 from llm.client       import answer_legal_question
+import logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -63,6 +65,7 @@ def query(request: QueryRequest):
         raise
 
     except Exception as e:
+        logger.exception(f"Query failed for question: {request.question}")
         raise HTTPException(
             status_code = 500,
             detail      = f"Query failed: {str(e)}"
