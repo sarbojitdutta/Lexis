@@ -6,9 +6,7 @@ import requests
 from config import GROQ_API_KEY, LLM_MODEL
 
 FALLBACK_MODELS = [
-    "llama-3.1-8b-instant",
-    "gemma2-9b-it",
-    "llama3-8b-8192",
+    "openai/gpt-oss-20b"
 ]
 
 
