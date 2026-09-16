@@ -2,16 +2,22 @@ import { useState, useEffect, useCallback } from "react";
 import Navbar from "./components/NavBar";
 import Sidebar from "./components/SideBar";
 import MessageList, { EmptyState } from "./components/MessageList";
-import SearchBox   from "./components/SearchBox";
+import SearchBox from "./components/SearchBox";
 import type { Chat, Message } from "./lib/api";
-import { askQuestion, checkHealth, generateId, createChat } from "./lib/api";
+import {
+  askQuestion,
+  checkHealth,
+  generateId,
+  createChat,
+  getChats,
+  getChat,
+  deleteChat,
+} from "./lib/api";
 import {
   getCurrentUser,
   handleOAuthRedirect,
   type User,
 } from "./lib/auth";
-
-
 
 export default function App() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -19,192 +25,210 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [health, setHealth] = useState<{
     total_vectors?: number;
-    total_nodes?  : number;
+    total_nodes?: number;
   }>({});
   const [user, setUser] = useState<User | null>(() => getCurrentUser());
-  
-  const wasRedirect = handleOAuthRedirect()
-  if(wasRedirect){
-    setUser(getCurrentUser());
-  }
 
-  // Load health stats on mount
+  // Complete OAuth callback before loading authenticated chat data.
+  useEffect(() => {
+    if (handleOAuthRedirect()) {
+      setUser(getCurrentUser());
+    }
+  }, []);
+
   useEffect(() => {
     checkHealth()
       .then(h => setHealth(h))
       .catch(() => {});
   }, []);
 
-  // Get currently active chat
+  // Load persisted chats for the authenticated user.
+  useEffect(() => {
+    if (!user) return;
+
+    getChats()
+      .then(serverChats => {
+        setChats(serverChats);
+        if (serverChats.length > 0) {
+          setActiveChatId(serverChats[0].id);
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  // Load messages whenever the selected chat changes.
+  useEffect(() => {
+    if (!activeChatId) return;
+
+    getChat(activeChatId)
+      .then(serverChat => {
+        setChats(prev => prev.map(chat =>
+          chat.id === serverChat.id ? serverChat : chat
+        ));
+      })
+      .catch(() => {});
+  }, [activeChatId]);
+
   const activeChat = chats.find(c => c.id === activeChatId) ?? null;
 
-  // ── New chat ──
-  function handleNewChat() {
-    const chat = createChat();
-    setChats(prev => [chat, ...prev]);
-    setActiveChatId(chat.id);
+  async function handleNewChat() {
+    if (!user) return;
+
+    try {
+      const chat = await createChat();
+      setChats(prev => [chat, ...prev]);
+      setActiveChatId(chat.id);
+    } catch {
+      // Keep the UI unchanged if chat creation fails.
+    }
   }
 
-  // ── Select chat from sidebar ──
   function handleSelectChat(id: string) {
     setActiveChatId(id);
   }
 
-  // ── Delete chat from sidebar ──
-  function handleDeleteChat(id: string) {
-    setChats(prev => prev.filter(c => c.id !== id));
-    if (activeChatId === id) {
-      setActiveChatId(
-        chats.find(c => c.id !== id)?.id ?? null
-      );
+  async function handleDeleteChat(id: string) {
+    try {
+      await deleteChat(id);
+      setChats(prev => prev.filter(c => c.id !== id));
+      if (activeChatId === id) {
+        setActiveChatId(prev => {
+          const remaining = chats.filter(c => c.id !== id);
+          return remaining[0]?.id ?? null;
+        });
+      }
+    } catch {
+      // Do not remove a chat locally if the server rejected deletion.
     }
   }
 
-  // ── Submit question ──
   const handleSubmit = useCallback(async (question: string) => {
+    if (!user) return;
 
-    // Create new chat if none is active
     let chatId = activeChatId;
-    if (!chatId) {
-      const newChat = createChat(question);
-      setChats(prev => [newChat, ...prev]);
-      setActiveChatId(newChat.id);
-      chatId = newChat.id;
-    }
-
-    // Set chat title from first question
-    setChats(prev => prev.map(c => {
-      if (c.id !== chatId) return c;
-      const isFirst = c.messages.length === 0;
-      return {
-        ...c,
-        title: isFirst
-          ? question.slice(0, 40) + (question.length > 40 ? "..." : "")
-          : c.title,
-      };
-    }));
-
-    // Add user message
-    const userMsg: Message = {
-      id       : generateId(),
-      role     : "user",
-      content  : question,
-      citations: [],
-      timestamp: new Date(),
-    };
-
-    // Add loading placeholder
-    const loadingMsg: Message = {
-      id       : generateId(),
-      role     : "assistant",
-      content  : "",
-      citations: [],
-      timestamp: new Date(),
-      loading  : true,
-    };
-
-    setChats(prev => prev.map(c =>
-      c.id === chatId
-        ? { ...c, messages: [...c.messages, userMsg, loadingMsg] }
-        : c
-    ));
-
-    setLoading(true);
 
     try {
-      const response = await askQuestion(question);
+      // Create the real server-side chat when the user starts from the empty state.
+      if (!chatId) {
+        const newChat = await createChat(question.slice(0, 80));
+        chatId = newChat.id;
+        setChats(prev => [newChat, ...prev]);
+        setActiveChatId(chatId);
+      }
 
-      // Replace loading message with real answer
-      const assistantMsg: Message = {
-        id       : loadingMsg.id,
-        role     : "assistant",
-        content  : response.answer,
-        citations: response.citations,
-        timestamp: new Date(),
-        loading  : false,
-      };
-
-      setChats(prev => prev.map(c =>
-        c.id === chatId
-          ? {
-              ...c,
-              messages: c.messages.map(m =>
-                m.id === loadingMsg.id ? assistantMsg : m
-              ),
-            }
-          : c
-      ));
-
-    } catch (err) {
-      // Replace loading with error message
-      const errorMsg: Message = {
-        id       : loadingMsg.id,
-        role     : "assistant",
-        content  : "Something went wrong.",
+      const targetChatId = chatId;
+      const userMsg: Message = {
+        id: generateId(),
+        role: "user",
+        content: question,
         citations: [],
         timestamp: new Date(),
-        loading  : false,
       };
 
-      setChats(prev => prev.map(c =>
-        c.id === chatId
+      const loadingMsg: Message = {
+        id: generateId(),
+        role: "assistant",
+        content: "",
+        citations: [],
+        timestamp: new Date(),
+        loading: true,
+      };
+
+      setChats(prev => prev.map(chat =>
+        chat.id === targetChatId
           ? {
-              ...c,
-              messages: c.messages.map(m =>
-                m.id === loadingMsg.id ? errorMsg : m
-              ),
+              ...chat,
+              title: chat.messages.length === 0
+                ? question.slice(0, 40) + (question.length > 40 ? "..." : "")
+                : chat.title,
+              messages: [...chat.messages, userMsg, loadingMsg],
             }
-          : c
+          : chat
       ));
 
+      setLoading(true);
+
+      const response = await askQuestion(question, targetChatId);
+
+      const assistantMsg: Message = {
+        id: loadingMsg.id,
+        role: "assistant",
+        content: response.answer,
+        citations: response.citations,
+        timestamp: new Date(),
+        loading: false,
+      };
+
+      setChats(prev => prev.map(chat =>
+        chat.id === targetChatId
+          ? {
+              ...chat,
+              messages: chat.messages.map(message =>
+                message.id === loadingMsg.id ? assistantMsg : message
+              ),
+            }
+          : chat
+      ));
+    } catch {
+      const errorMsg: Message = {
+        id: generateId(),
+        role: "assistant",
+        content: "Something went wrong. Please try again.",
+        citations: [],
+        timestamp: new Date(),
+        loading: false,
+      };
+
+      setChats(prev => prev.map(chat => {
+        if (chat.id !== chatId) return chat;
+        const loadingIndex = [...chat.messages]
+          .reverse()
+          .findIndex(message => message.loading);
+        if (loadingIndex < 0) return chat;
+
+        const index = chat.messages.length - 1 - loadingIndex;
+        return {
+          ...chat,
+          messages: chat.messages.map((message, i) =>
+            i === index ? errorMsg : message
+          ),
+        };
+      }));
     } finally {
       setLoading(false);
     }
-
-  }, [activeChatId]);
+  }, [activeChatId, user]);
 
   return (
     <div style={{
-      display      : "flex",
+      display: "flex",
       flexDirection: "column",
-      height       : "100vh",
-      overflow     : "hidden",
-      background   : "var(--bg-base)",
+      height: "100vh",
+      overflow: "hidden",
+      background: "var(--bg-base)",
     }}>
-
-      {/* Top navbar */}
       <Navbar
         totalVectors={health.total_vectors}
         totalNodes={health.total_nodes}
-        user = {user}
+        user={user}
       />
 
-      {/* Body — sidebar + main */}
-      <div style={{
-        display : "flex",
-        flex    : 1,
-        overflow: "hidden",
-      }}>
-
-        {/* Left sidebar */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <Sidebar
-          chats        = {chats}
-          activeChatId = {activeChatId}
-          onNewChat    = {handleNewChat}
-          onSelectChat = {handleSelectChat}
-          onDeleteChat = {handleDeleteChat}
+          chats={chats}
+          activeChatId={activeChatId}
+          onNewChat={handleNewChat}
+          onSelectChat={handleSelectChat}
+          onDeleteChat={handleDeleteChat}
         />
 
-        {/* Main area */}
         <main style={{
-          flex         : 1,
-          display      : "flex",
+          flex: 1,
+          display: "flex",
           flexDirection: "column",
-          overflow     : "hidden",
-          background   : "var(--bg-base)",
+          overflow: "hidden",
+          background: "var(--bg-base)",
         }}>
-
-          {/* Messages or empty state */}
           {activeChat && activeChat.messages.length > 0 ? (
             <MessageList messages={activeChat.messages} />
           ) : (
@@ -213,12 +237,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Search box always at bottom */}
-          <SearchBox
-            onSubmit={handleSubmit}
-            loading={loading}
-          />
-
+          <SearchBox onSubmit={handleSubmit} loading={loading} />
         </main>
       </div>
     </div>
