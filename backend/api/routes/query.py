@@ -71,6 +71,10 @@ def query(
             question=request.question,
             history=history,
         )
+        print("\n========== LEXIS DEBUG ==========")
+        print("Original question:", request.question)
+        print("History:", history)
+        print("Rewritten query:", search_query)
 
         logger.info(
             "RAG query | chat_id=%s | original=%r | retrieval=%r",
@@ -87,6 +91,11 @@ def query(
             k_vector=request.k_vector,
             k_graph=request.k_graph,
         )
+        print("Retrieved results:", len(used_results))
+        print("Context length:", len(context))
+        print("Context:")
+        print(context)
+        print("=================================\n")
 
         if not used_results:
             raise HTTPException(
