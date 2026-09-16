@@ -49,7 +49,20 @@ def call_llm(prompt: str,
                 )
 
                 if response.status_code == 200:
-                    return response.json()["choices"][0]["message"]["content"]
+                    data = response.json()
+
+                    print("\n========== GROQ RAW RESPONSE ==========")
+                    print(data)
+                    print("=======================================\n")
+
+                    content = data["choices"][0]["message"]["content"]
+
+                    print("========== GROQ CONTENT ==========")
+                    print(repr(content))
+                    print("Content length:", len(content or ""))
+                    print("==================================\n")
+
+                    return content
                 elif response.status_code == 429:
                     raise Exception("Groq rate limit hit. Wait a moment and try again.")
                 else:
