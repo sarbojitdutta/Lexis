@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import importlib
 import logging
 
-from api.routes  import query, documents, graphs, auth
+from api.routes  import query, documents, graphs, auth, chats
 from config      import FAISS_INDEX, GRAPH_DB
 from llm.client  import check_llm_connection
 
@@ -41,6 +41,7 @@ app.include_router(query.router,     prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(graphs.router,     prefix="/api")
 app.include_router(auth.router, prefix="/api")
+app.include_router(chats.router, prefix="/api")
 
 
 # ─────────────────────────────────────────────

@@ -2,10 +2,11 @@ import sys
 import os
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 from auth.oauth import get_google_auth_url, exchange_code_for_token, get_google_user
 from auth.jwt   import create_token
+from auth.middleware import get_optional_user
 
 router = APIRouter()
 
@@ -43,9 +44,7 @@ async def google_callback(code: str, state: str = ""):
         )
 
 @router.get("/auth/me")
-def get_me(user: dict = None):
-    from auth.middleware import get_optional_user
-    from fastapi import Depends
+def get_me(user: dict | None = Depends(get_optional_user)):
     if not user:
         return {"authenticated": False}
     return {

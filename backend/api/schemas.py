@@ -18,6 +18,10 @@ class QueryRequest(BaseModel):
         max_length  = 500,
         description = "Legal question to ask"
     )
+    chat_id: Optional[str] = Field(
+        default=None,
+        description="Existing chat ID for conversational context"
+    )
     k_vector : Optional[int] = Field(
         default     = 4,
         ge          = 1,
@@ -35,6 +39,7 @@ class QueryRequest(BaseModel):
         json_schema_extra = {
                     "example": {
                         "question": "Can a minor enter into a contract?",
+                        "chat_id": "existing-chat-uuid",
                         "k_vector": 4,
                         "k_graph" : 6,
                     }
@@ -84,6 +89,7 @@ class QueryResponse(BaseModel):
     """
     question  : str
     answer    : str
+    chat_id: Optional[str] = None
     citations : list[Citation]
     context_used : int = Field(
         description = "Number of context chunks used"

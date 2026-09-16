@@ -2,14 +2,14 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from fastapi import Depands, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from auth.jwt import verify_token
 
 security = HTTPBearer(auto_error=False)
 
 def get_current_user(
-        credentials: HTTPAuthorizationCredentials = Depands(security)
+        credentials: HTTPAuthorizationCredentials = Depends(security)
 )-> dict:
     
     if not credentials:
@@ -30,7 +30,7 @@ def get_current_user(
     return payload
 
 def get_optional_user(
-        credentials: HTTPAuthorizationCredentials = Depands(security)
+        credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> dict:
     if not credentials:
         return None
