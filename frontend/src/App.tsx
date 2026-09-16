@@ -27,14 +27,10 @@ export default function App() {
     total_vectors?: number;
     total_nodes?: number;
   }>({});
-  const [user, setUser] = useState<User | null>(() => getCurrentUser());
-
-  // Complete OAuth callback before loading authenticated chat data.
-  useEffect(() => {
-    if (handleOAuthRedirect()) {
-      setUser(getCurrentUser());
-    }
-  }, []);
+  const [user] = useState<User | null>(() => {
+    handleOAuthRedirect();
+    return getCurrentUser();
+  });
 
   useEffect(() => {
     checkHealth()
@@ -92,10 +88,8 @@ export default function App() {
       await deleteChat(id);
       setChats(prev => prev.filter(c => c.id !== id));
       if (activeChatId === id) {
-        setActiveChatId(prev => {
-          const remaining = chats.filter(c => c.id !== id);
-          return remaining[0]?.id ?? null;
-        });
+        const remaining = chats.filter(c => c.id !== id);
+        setActiveChatId(remaining[0]?.id ?? null);
       }
     } catch {
       // Do not remove a chat locally if the server rejected deletion.
