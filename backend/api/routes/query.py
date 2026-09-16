@@ -114,6 +114,11 @@ def query(
             history=history_text,
         )
 
+        print("\n========== LLM DEBUG ==========")
+        print("Answer:", repr(answer))
+        print("Answer length:", len(answer) if answer else 0)
+        print("================================\n")
+
         # Persist only after successful retrieval and generation.
         save_message(
             chat_id=chat_id,
