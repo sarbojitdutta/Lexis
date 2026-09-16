@@ -56,8 +56,8 @@ def get_connection():
     init_conversation_tables(conn=conn)
     return conn
 
-def create_chat(user_id: str, title: str | None = None):
 
+def create_chat(user_id: str, title: str | None = None):
     chat_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
     conn = get_connection()
@@ -69,7 +69,6 @@ def create_chat(user_id: str, title: str | None = None):
                 VALUES (?, ?, ?, ?)
             """,
             (chat_id, user_id, title, created_at)
-            
         )
         conn.commit()
 
@@ -82,6 +81,7 @@ def create_chat(user_id: str, title: str | None = None):
     finally:
         conn.close()
 
+
 def save_messages(chat_id: str, role: str, content: str, citations: list | None = None):
     message_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
@@ -93,12 +93,7 @@ def save_messages(chat_id: str, role: str, content: str, citations: list | None 
         conn.execute(
             """
             INSERT INTO messages (
-                id,
-                chat_id,
-                role,
-                content,
-                citations,
-                created_at
+                id, chat_id, role, content, citations, created_at
             )
             VALUES (?, ?, ?, ?, ?, ?)
             """,
@@ -124,19 +119,19 @@ def save_messages(chat_id: str, role: str, content: str, citations: list | None 
     finally:
         conn.close()
 
+
+# Singular alias used by the query endpoint.
+def save_message(chat_id: str, role: str, content: str, citations: list | None = None):
+    return save_messages(chat_id, role, content, citations)
+
+
 def chat_history(chat_id: str, limit: int = 20):
     conn = get_connection()
 
     try:
         rows = conn.execute(
             """
-            SELECT
-                id,
-                chat_id,
-                role,
-                content,
-                citations,
-                created_at
+            SELECT id, chat_id, role, content, citations, created_at
             FROM messages
             WHERE chat_id = ?
             ORDER BY created_at DESC
@@ -147,39 +142,28 @@ def chat_history(chat_id: str, limit: int = 20):
 
         rows = list(reversed(rows))
 
-        history = []
-
-        for row in rows:
-            history.append({
+        return [
+            {
                 "id": row["id"],
                 "chat_id": row["chat_id"],
                 "role": row["role"],
                 "content": row["content"],
-                "citations": (
-                    json.loads(row["citations"])
-                    if row["citations"]
-                    else None
-                ),
+                "citations": json.loads(row["citations"]) if row["citations"] else None,
                 "created_at": row["created_at"]
-            })
-
-        return history
-
+            }
+            for row in rows
+        ]
     finally:
         conn.close()
 
-def get_users_chat(user_id: str):
 
+def get_users_chat(user_id: str):
     conn = get_connection()
 
     try:
         rows = conn.execute(
             """
-            SELECT
-                id,
-                user_id,
-                title,
-                created_at
+            SELECT id, user_id, title, created_at
             FROM chats
             WHERE user_id = ?
             ORDER BY created_at DESC
@@ -190,49 +174,38 @@ def get_users_chat(user_id: str):
     finally:
         conn.close()
 
-def get_chat(chat_id: str, user_id: str):
 
+def get_chat(chat_id: str, user_id: str):
     conn = get_connection()
 
     try:
         row = conn.execute(
             """
-            SELECT
-                id,
-                user_id,
-                title,
-                created_at
+            SELECT id, user_id, title, created_at
             FROM chats
-            WHERE id = ?
-              AND user_id = ?
+            WHERE id = ? AND user_id = ?
             """,
             (chat_id, user_id)
         ).fetchone()
 
         return dict(row) if row else None
-
     finally:
         conn.close()
 
-def delete_chat(chat_id: str, user_id: str):
 
+def delete_chat(chat_id: str, user_id: str):
     conn = get_connection()
 
     try:
         cur = conn.execute(
             """
             DELETE FROM chats
-            WHERE id = ?
-              AND user_id = ?
+            WHERE id = ? AND user_id = ?
             """,
             (chat_id, user_id)
         )
 
         conn.commit()
-
         return cur.rowcount > 0
-
     finally:
         conn.close()
-            
-        
