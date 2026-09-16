@@ -51,16 +51,24 @@ def call_llm(prompt: str,
                 if response.status_code == 200:
                     data = response.json()
 
-                    print("\n========== GROQ RAW RESPONSE ==========")
-                    print(data)
-                    print("=======================================\n")
+                    choice = data["choices"][0]
+                    message = choice["message"]
+                    content = message.get("content", "")
+                    finish_reason = choice.get("finish_reason")
 
-                    content = data["choices"][0]["message"]["content"]
+                    print("\n========== GROQ DEBUG ==========")
+                    print("Model:", data.get("model"))
+                    print("Finish reason:", finish_reason)
+                    print("Content:", repr(content))
+                    print("Reasoning:", repr(message.get("reasoning")))
+                    print("Usage:", data.get("usage"))
+                    print("================================\n")
 
-                    print("========== GROQ CONTENT ==========")
-                    print(repr(content))
-                    print("Content length:", len(content or ""))
-                    print("==================================\n")
+                    if not content and finish_reason == "length":
+                        raise Exception(
+                            "Groq generation stopped because max_tokens was reached "
+                            "before a final answer was produced."
+                        )
 
                     return content
                 elif response.status_code == 429:
@@ -167,7 +175,7 @@ def check_llm_connection() -> dict:
         response = call_llm(
             prompt="Reply with just the word: connected",
             temperature=0.0,
-            max_tokens=10,
+            max_tokens=50,
         )
         return {
             "status": "connected",
